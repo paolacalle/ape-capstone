@@ -1,18 +1,31 @@
 import os
 import sys
 
-# Try current dir as project root
-project_root = os.getcwd()
 
-if not os.path.isdir(os.path.join(project_root, "utils")):
-    project_root = os.path.abspath(os.path.join(project_root, ".."))
-
+# make sure project root is on the path when running from /analysis
+project_root = os.path.abspath("..")
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-print("Project root:", project_root)
-print("Contents:", os.listdir(project_root))
+from utils import CapstoneDataLoader  # this uses utils/__init__.py
 
-from utils.seed_setter import SeedSetter
-
-SeedSetter.set_seed()
+def set_env(
+    data_dir: str, 
+    seed_value: int = 18787288, 
+    min_ratings: int = 5, 
+    drop_missing_ratings: bool = True, 
+    drop_inconsistent_gender: bool = True
+) -> CapstoneDataLoader:
+    """Set up the notebook environment, including random seeds for reproducibility."""
+    
+    loader = CapstoneDataLoader(
+        data_dir=data_dir, 
+        seed_value=seed_value, 
+        min_ratings=min_ratings, 
+        drop_missing_ratings=drop_missing_ratings, 
+        drop_inconsistent_gender=drop_inconsistent_gender
+    )
+    return loader
+    
+if __name__ == "__main__":
+    set_env(data_dir="../data")
