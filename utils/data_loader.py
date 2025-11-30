@@ -122,7 +122,7 @@ class CapstoneDataLoader:
         
         # quick sanity check
         expected_cols = len(NUM_COLS) + len(TAG_COLS) + len(QUAL_COLS)
-        assert self.merged_df.shape[1] == expected_cols, \
+        assert merged.shape[1] == expected_cols, \
             "Merged dataframe has unexpected number of columns."
             
         merged.columns = NUM_COLS + TAG_COLS + QUAL_COLS
