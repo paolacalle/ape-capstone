@@ -13,6 +13,7 @@ def set_env(
     data_dir: str, 
     seed_value: int = 18787288, 
     min_ratings: int = 5, 
+    max_ratings: int = None,
     drop_missing_ratings: bool = True, 
     drop_inconsistent_gender: bool = True
 ) -> CapstoneDataLoader:
@@ -22,6 +23,7 @@ def set_env(
         data_dir=data_dir, 
         seed_value=seed_value, 
         min_ratings=min_ratings, 
+        max_ratings=max_ratings,
         drop_missing_ratings=drop_missing_ratings, 
         drop_inconsistent_gender=drop_inconsistent_gender
     )

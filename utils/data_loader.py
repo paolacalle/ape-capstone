@@ -61,6 +61,7 @@ class CapstoneDataLoader:
         data_dir : Optional[str |Path] = Path("./data"),
         seed_value : int = 18787288,
         min_ratings : int = 5,
+        max_ratings : int = None,
         drop_missing_ratings : bool = True,
         drop_inconsistent_gender : bool = True
     ) -> None:  
@@ -73,6 +74,7 @@ class CapstoneDataLoader:
             
         self.seed_value = seed_value
         self.min_ratings = min_ratings
+        self.max_ratings = max_ratings
         self.drop_missing_ratings = drop_missing_ratings
         self.drop_inconsistent_gender = drop_inconsistent_gender
         
@@ -135,6 +137,7 @@ class CapstoneDataLoader:
         
         Rules: 
         - Drop low-rating-count professors (num_ratings < min_ratings).
+        - Drop high-rating-count professors (num_ratings > max_ratings).
         - Drop rows with missing avg_rating / avg_difficulty (optional).
         - Drop rows where both male and female == 1 (optional).
         """
@@ -150,6 +153,12 @@ class CapstoneDataLoader:
             df = df[df["num_ratings"] >= self.min_ratings]
             dropped_count = before - len(df)
             info["dropped_low_rating_count"] = dropped_count
+            
+        if self.max_ratings is not None:
+            before = len(df)
+            df = df[df["num_ratings"] <= self.max_ratings]
+            dropped_count = before - len(df)
+            info["dropped_high_rating_count"] = dropped_count
             
         # 2 -- Drop rows with missing avg_rating / avg_difficulty
         if self.drop_missing_ratings:
