@@ -28,6 +28,7 @@ def test_model_helper_cross_val_with_logistic_regression():
         kf,
         scoring_methods=scoring_methods,
     )
+    
 
     assert set(fold_scores.keys()) == set(scoring_methods)
     assert len(fold_scores["accuracy"]) == 4
