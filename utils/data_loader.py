@@ -241,7 +241,8 @@ class CapstoneDataLoader:
         self.load_raw()
         self.merge()
         self.clean()
-        self.add_tag_rates()
+        
+        # add any other logic as needed 
         
         return self.prepared_df
     
