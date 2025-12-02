@@ -1,5 +1,6 @@
 
 import numpy as np
+from typing import Dict, List
 from sklearn.metrics import (
     roc_curve as sk_roc_curve,
     auc as sk_auc
@@ -27,6 +28,20 @@ class Scores:
             "auc_scratch",
             "roc_scratch"
         ]
+        
+    @staticmethod
+    def verify_scoring_methods(methods: List[str]):
+        """
+        Verify that all requested scoring methods are valid.
+        Raises ValueError if any invalid methods are found.
+        """
+        valid = set(Scores.valid_scoring_methods())
+        invalid = [m for m in methods if m not in valid]
+        if invalid:
+            raise ValueError(
+                f"Invalid scoring methods: {invalid}. "
+                f"Valid methods are: {sorted(valid)}"
+            )
     
     @staticmethod
     def confusion_matrix(y_true, y_pred):
@@ -256,7 +271,8 @@ class Scores:
         y_pred,
         y_pred_scores,
         methods: list[str],
-    ):
+    ) -> Dict[str, float]:
+        
         """
         Evaluate multiple scoring methods.
         """

@@ -3,6 +3,7 @@
 # reuse across Q1–Q10 without actually plugging in specific columns yet.
 
 from dataclasses import dataclass
+from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
@@ -93,24 +94,84 @@ class ModelHelper:
     def kfold_split(
         self,
         n_splits: int = 5,
+        shuffle: bool = True
     ):
-        kf = KFold(n_splits=n_splits, shuffle=True, random_state=self.random_seed)
+        kf = KFold(n_splits=n_splits, shuffle=shuffle, random_state=self.random_seed)
         return kf
     
     def cross_val_score(
         self,
         model, 
-        x, 
+        X,
         y,
-        kfolds,
-        scoring=[]
-    ):
-        fold_results = {
-            
-        }
-        for train_index, test_index in kfolds.split(x):
-            X_train, X_test = x[train_index], x[test_index]
-            y_train, y_test = y[train_index], y[test_index]
+        kfolds: KFold,
+        scoring_methods: Optional[List[str]] = None
+    ) -> Dict[str, List[float]]:
+        """
+        Perform K-fold cross-validation and compute custom scores per fold.
+
+        Parameters
+        ----------
+        model : sklearn-like estimator
+            Must implement fit(X, y), predict(X), and predict_proba(X) for classification.
+        X : array-like or DataFrame of shape (n_samples, n_features)
+        y : array-like of shape (n_samples,)
+        kfolds : KFold
+            A sklearn KFold (or similar) splitter.
+        scoring_methods : list of str, optional
+            Names of scoring methods as implemented in Scores. If None, no scores are computed.
+
+        Returns
+        -------
+        dict
+            {method_name: [score_fold_1, score_fold_2, ...]}
+        """
+        if scoring_methods is None:
+            scoring_methods = []
+
+        Scores.verify_scoring_methods(scoring_methods)
+
+        # Ensure numpy array or proper indexer
+        # This allows compatibility with both pandas DataFrames and numpy arrays
+        if hasattr(X, "iloc"):
+            X_data = X
+            is_pandas_X = True
+        else:
+            X_data = np.asarray(X)
+            is_pandas_X = False
+
+        if hasattr(y, "iloc"):
+            y_data = y
+            is_pandas_y = True
+        else:
+            y_data = np.asarray(y)
+            is_pandas_y = False
+
+        fold_results: Dict[str, List[float]] = defaultdict(list)
+        
+        for train_index, test_index in kfolds.split(X_data):
+            if is_pandas_X:
+                X_train, X_test = X_data.iloc[train_index], X_data.iloc[test_index]
+            else:
+                X_train, X_test = X_data[train_index], X_data[test_index]
+
+            if is_pandas_y:
+                y_train, y_test = y_data.iloc[train_index], y_data.iloc[test_index]
+            else:
+                y_train, y_test = y_data[train_index], y_data[test_index]
 
             model.fit(X_train, y_train)
+
+            y_pred = model.predict(X_test)
+
+            # classification-only for now
+            assert hasattr(model, "predict_proba"), "Model does not have predict_proba method"
+            y_pred_scores = model.predict_proba(X_test)[:, 1]
+
+            res = Scores.evaluate(y_test, y_pred, y_pred_scores, scoring_methods)
             
+            for method, score in res.items():
+                fold_results[method].append(score)
+            
+        return fold_results
+    
