@@ -59,7 +59,7 @@ class CapstoneDataLoader:
     def __init__(
         self, 
         data_dir : Optional[str |Path] = Path("./data"),
-        seed_value : int = 18787288,
+        seed_value : int = None, # get seed from .env if None
         min_ratings : int = 5,
         max_ratings : int = None,
         drop_missing_ratings : bool = True,
@@ -237,3 +237,5 @@ class CapstoneDataLoader:
         self.add_tag_rates()
         
         return self.prepared_df
+    
+    

@@ -11,7 +11,7 @@ from utils import CapstoneDataLoader  # this uses utils/__init__.py
 
 def set_env(
     data_dir: str, 
-    seed_value: int = 18787288, 
+    seed_value: int = None, # get seed from .env if None
     min_ratings: int = 5, 
     max_ratings: int = None,
     drop_missing_ratings: bool = True, 
