@@ -55,6 +55,11 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+# Set .env file in utils folder
+```bash 
+SEED=18787288 # n-number 
+```
+
 # Key Components
 ### `SeedSetter` 
 The assignment requires seeding the RNG using an N-number (losing points otherwise).
