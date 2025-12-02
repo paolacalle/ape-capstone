@@ -7,7 +7,7 @@ project_root = os.path.abspath("..")
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from utils import CapstoneDataLoader  # this uses utils/__init__.py
+from utils import CapstoneDataLoader, plot_utils # this uses utils/__init__.py
 
 def set_env(
     data_dir: str, 
@@ -27,7 +27,7 @@ def set_env(
         drop_missing_ratings=drop_missing_ratings, 
         drop_inconsistent_gender=drop_inconsistent_gender
     )
-    return loader
+    return loader, plot_utils
     
 if __name__ == "__main__":
     set_env(data_dir="../data")

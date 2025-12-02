@@ -4,16 +4,10 @@
 
 from .seed_setter import SeedSetter
 from .data_loader import (
-    CapstoneDataLoader,
-    NUM_COLS,
-    TAG_COLS,
-    QUAL_COLS,
+    CapstoneDataLoader
 )
 
 __all__ = [
     "SeedSetter",
     "CapstoneDataLoader",
-    "NUM_COLS",
-    "TAG_COLS",
-    "QUAL_COLS",
 ]

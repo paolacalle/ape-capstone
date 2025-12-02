@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
+import seaborn as sns
+
 COLORS = [
     "blue",
     "orange",
@@ -170,3 +172,16 @@ def plot_roc_curve(
         fig.savefig(output_path, bbox_inches="tight")
 
     return fig
+
+
+def plot_correlation_matrix(
+    df: pd.DataFrame,
+) -> plt.Figure:
+    correlation_matrix = df.corr()
+    
+    fig, ax = plt.subplots(figsize=(10, 8))
+    sns.heatmap(correlation_matrix, annot=True, fmt=".2f", cmap="coolwarm", ax=ax)
+    ax.set_title("Correlation Matrix")
+    plt.tight_layout()
+
+    return fig, correlation_matrix

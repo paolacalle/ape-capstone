@@ -1,45 +1,8 @@
+
 from pathlib import Path
 from typing import Optional, Tuple, Dict, List
 import pandas as pd
 from .seed_setter import SeedSetter as ss
-
-
-NUM_COLS: List[str] = [
-    "avg_rating",            # 1 
-    "avg_difficulty",        # 2
-    "num_ratings",           # 3
-    "pepper",                # 4
-    "would_take_again_prop", # 5
-    "num_online_ratings",    # 6
-    "male",                  # 7
-    "female",                # 8
-]
-
-TAG_COLS: List[str] = [
-    "tough_grader",
-    "good_feedback",
-    "respected",
-    "lots_to_read",
-    "participation_matters",
-    "no_skip",          # “Don’t skip class or you will not pass”
-    "lots_of_hw",
-    "inspirational",
-    "pop_quizzes",
-    "accessible",
-    "papers",           # “So many papers”
-    "clear_grading",
-    "hilarious",
-    "test_heavy",
-    "few_things",       # “Graded by few things”
-    "amazing_lectures",
-    "caring",
-    "extra_credit",
-    "group_projects",
-    "lecture_heavy",
-]
-
-QUAL_COLS: List[str] = ["major", "university", "state"]
-
 
 class CapstoneDataLoader:
     """
@@ -88,6 +51,50 @@ class CapstoneDataLoader:
         
         self.cleaning_info: Dict[str, int] = {}
         
+    @property
+    def num_cols(self) -> List[str]:
+        NUM_COLS: List[str] = [
+            "avg_rating",            # 1 
+            "avg_difficulty",        # 2
+            "num_ratings",           # 3
+            "pepper",                # 4
+            "would_take_again_prop", # 5
+            "num_online_ratings",    # 6
+            "male",                  # 7
+            "female",                # 8
+        ]
+        return NUM_COLS
+    @property
+    def tag_cols(self) -> List[str]:
+        TAG_COLS: List[str] = [
+            "tough_grader",
+            "good_feedback",
+            "respected",
+            "lots_to_read",
+            "participation_matters",
+            "no_skip",          # “Don’t skip class or you will not pass”
+            "lots_of_hw",
+            "inspirational",
+            "pop_quizzes",
+            "accessible",
+            "papers",           # “So many papers”
+            "clear_grading",
+            "hilarious",
+            "test_heavy",
+            "few_things",       # “Graded by few things”
+            "amazing_lectures",
+            "caring",
+            "extra_credit",
+            "group_projects",
+            "lecture_heavy",
+        ]
+        return TAG_COLS
+
+    @property
+    def qual_cols(self) -> List[str]:
+        QUAL_COLS: List[str] = ["major", "university", "state"]
+        return QUAL_COLS
+        
     # --- Main preparation method ---
     def set_seed(self) -> None:
         """Set the random seed for reproducibility."""
@@ -123,11 +130,11 @@ class CapstoneDataLoader:
         merged = pd.concat([self.num_df, self.tags_df, self.qual_df], axis=1)
         
         # quick sanity check
-        expected_cols = len(NUM_COLS) + len(TAG_COLS) + len(QUAL_COLS)
+        expected_cols = len(self.num_cols) + len(self.tag_cols) + len(self.qual_cols)
         assert merged.shape[1] == expected_cols, \
             "Merged dataframe has unexpected number of columns."
             
-        merged.columns = NUM_COLS + TAG_COLS + QUAL_COLS
+        merged.columns = self.num_cols + self.tag_cols + self.qual_cols
         self.merged_df = merged
         
         return self.merged_df
@@ -183,40 +190,40 @@ class CapstoneDataLoader:
         
         return self.cleaned_df
     
-    def add_tag_rates(
+    def add_professor_relative_tag_rates(
         self, 
-        denom_col: str = "num_ratings",
-        prefix: str = "tag_rate_"
+        prefix: str = "tag_professor_relative_"
     ) -> pd.DataFrame:
-        """
-        Add normalized tag columns: tag_rate_<tag> = tag_count / num_ratings.
-        Rows with num_ratings == 0 get rate 0.
-        
-        Args:
-            denom_col: Column to use as denominator for rate calculation.
-            prefix: Prefix for the new rate columns.
-        Returns:
-            DataFrame with added tag rate columns.
-            
-        Example:
-            For tag 'tough_grader', new column 'tag_rate_tough_grader' is created.
-        """
-        if self.cleaned_df is None:
-            raise RuntimeError("Cleaned dataframe not available. Call clean() first.")
         
         df = self.cleaned_df.copy()
         
-        # we replace 0 with NA to avoid division by zero
-        denom = df[denom_col].replace(0, pd.NA) 
+        # all the tag columns
+        raw_tags = df[self.tag_cols]
         
-        # for each tag, create a new rate column
-        for tag in TAG_COLS:
-            rate_col = f"{prefix}{tag}"
+        # compute the sum for each professor
+        # this is the weight of the professor's total tags
+        row_sums = raw_tags.sum(axis=1)
+        
+        # avoid division-by-zero by replacing zeros with NA
+        row_sums = row_sums.replace(0, pd.NA)
+        
+        # calculate relative tag rates
+        # this is calculated by dividing each tag count 
+        # by the total tag count for that professor
+        # weighs each tag equally
+        rel_tags = raw_tags.div(row_sums, axis=0).fillna(0.0)
+        
+        # add the relative tag rates to the dataframe with the specified prefix
+        for col in rel_tags.columns:
+            df[f"{prefix}{col}"] = rel_tags[col]
             
-            # compute the rate, filling NA (from 0 denom) with 0.0
-            df[rate_col] = (df[tag] / denom).fillna(0.0)
-        
+        # sanity check: ensure no NaN values in the new columns
+        assert not df[[f"{prefix}{col}" for col in rel_tags.columns]].isna().any().any(), \
+            "NaN values found in relative tag rate columns."
+            
+            
         self.prepared_df = df
+    
         return self.prepared_df
     
     def prepare(self) -> pd.DataFrame:
