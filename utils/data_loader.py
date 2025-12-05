@@ -253,6 +253,46 @@ class CapstoneDataLoader:
         
         return self.prepared_df
     
+    def add_tag_intensity_score(
+        self,
+        demon: str = "num_ratings",
+        prefix: str = "tag_intensity_score"
+    ) -> pd.DataFrame:
+        """
+        Compute tag intensity for each tag as:
+            intensity = tag_value / num_ratings
+
+        Parameters
+        ----------
+        demon : str
+            Column name containing the denominator (e.g., number of ratings).
+        prefix : str
+            Prefix for intensity score columns.
+
+        Returns
+        -------
+        pd.DataFrame
+            Updated dataframe with tag intensity columns.
+        """
+        
+        df = self.prepared_df.copy()
+        
+        # avoid division-by-zero
+        denom = df[demon].replace(0, pd.NA)
+        
+        # vectorized division across all tag columns
+        # each tag value divided by the corresponding denom value for that row
+        intensity = df[self.tag_cols].div(denom, axis=0).fillna(0.0)
+        
+        # add prefix
+        intensity = intensity.add_prefix(prefix + "_")
+        
+        # attach to df
+        df = df.join(intensity)
+        
+        self.prepared_df = df
+        return df
+    
     def prepare(self) -> pd.DataFrame:
         """
         Run the full pipeline:
