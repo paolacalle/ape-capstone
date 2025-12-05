@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Optional, Tuple, Dict, List
 import pandas as pd
 from .seed_setter import SeedSetter as ss
+from sklearn.preprocessing import StandardScaler
 
 class CapstoneDataLoader:
     """
@@ -224,6 +225,32 @@ class CapstoneDataLoader:
             
         self.prepared_df = df
     
+        return self.prepared_df
+    
+    def add_column_zscores_standardized(
+        self,
+        columns: List[str],
+        prefix: str = "zscore_"
+    ) -> pd.DataFrame:
+        """
+        Add z-score standardized versions of specified columns.
+        
+        Parameters:
+        - columns: List of column names to standardize.
+        - prefix: Prefix for the new z-score columns.
+        
+        Returns the dataframe with added z-score columns.
+        """
+        df = self.prepared_df.copy()
+        
+        scaler = StandardScaler()
+        zscores = scaler.fit_transform(df[columns])
+        
+        for i, col in enumerate(columns):
+            df[f"{prefix}{col}"] = zscores[:, i]
+        
+        self.prepared_df = df
+        
         return self.prepared_df
     
     def prepare(self) -> pd.DataFrame:
