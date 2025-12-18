@@ -211,10 +211,11 @@ class CapstoneDataLoader:
             dropped_count = before - len(df)
             info["dropped_missing_ratings"] = dropped_count
             
-        # 3 -- Drop rows where both male and female == 1
+        # 3 -- Drop rows where both male and female == 1 or are none
         if self.drop_inconsistent_gender:
             before = len(df)
             df = df[~((df["male"] == 1) & (df["female"] == 1))]
+            df = df[~((df["male"] == 0) & (df["female"] == 0))]
             dropped_count = before - len(df)
             info["dropped_inconsistent_gender"] = dropped_count
             
@@ -329,7 +330,7 @@ class CapstoneDataLoader:
         self.prepared_df = df
         return df
     
-    def prepare(self) -> pd.DataFrame:
+    def initial_setup(self) -> pd.DataFrame:
         """
         Run the full pipeline:
         - set_seed
