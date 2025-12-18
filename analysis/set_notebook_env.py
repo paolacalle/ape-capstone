@@ -1,5 +1,7 @@
 import os
 import sys
+from typing import Optional, Union
+from pathlib import Path
 
 
 # make sure project root is on the path when running from /analysis
@@ -10,10 +12,10 @@ if project_root not in sys.path:
 from utils import CapstoneDataLoader, plot_utils # this uses utils/__init__.py
 
 def set_env(
-    data_dir: str, 
-    seed_value: int = None, # get seed from .env if None
-    min_ratings: int = 5, 
-    max_ratings: int = None,
+    data_dir: Union[str, Path] = Path("../data"), 
+    seed_value: Optional[int] = None, # get seed from .env if None
+    min_ratings: Optional[int] = 0, 
+    max_ratings: Optional[int] = None,
     drop_missing_ratings: bool = True, 
     drop_inconsistent_gender: bool = True
 ) -> CapstoneDataLoader:

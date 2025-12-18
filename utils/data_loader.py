@@ -1,8 +1,8 @@
 
 from pathlib import Path
-from typing import Optional, Tuple, Dict, List
+from typing import Optional, Tuple, Dict, List, Union
 import pandas as pd
-from .seed_setter import SeedSetter as ss
+from .seed_setter import SeedSetter
 from sklearn.preprocessing import StandardScaler
 
 class CapstoneDataLoader:
@@ -21,14 +21,33 @@ class CapstoneDataLoader:
     """
     
     def __init__(
-        self, 
-        data_dir : Optional[str |Path] = Path("./data"),
-        seed_value : int = None, # get seed from .env if None
-        min_ratings : int = 5,
-        max_ratings : int = None,
-        drop_missing_ratings : bool = True,
-        drop_inconsistent_gender : bool = True
-    ) -> None:  
+        self,
+        data_dir: Union[str, Path] = Path("./data"),
+        seed_value: Optional[int] = None,
+        min_ratings: Optional[int] = None,
+        max_ratings: Optional[int] = None,
+        drop_missing_ratings: bool = True,
+        drop_inconsistent_gender: bool = True,
+    ) -> None:
+        """
+        Initialize the dataset configuration.
+
+        Parameters
+        ----------
+        data_dir : str | Path, optional
+            Directory containing the input data.
+        seed_value : int, optional
+            Random seed for reproducibility. If None, the seed is loaded from
+            the environment configuration.
+        min_ratings : int, default=5
+            Minimum number of ratings required to keep an observation.
+        max_ratings : int, optional
+            Maximum number of ratings allowed. If None, no upper bound is applied.
+        drop_missing_ratings : bool, default=True
+            Whether to drop entries with missing ratings.
+        drop_inconsistent_gender : bool, default=True
+            Whether to drop entries with inconsistent gender labels.
+        """
         
         # find the csv files
         if data_dir is None:
@@ -36,7 +55,14 @@ class CapstoneDataLoader:
         else:
             self.data_dir = Path(data_dir)
             
-        self.seed_value = seed_value
+            
+        SeedSetter.set_seed()
+            
+        if seed_value == None:
+            self.seed_value = SeedSetter.get_seed()
+        else:
+            self.seed_value = seed_value
+            
         self.min_ratings = min_ratings
         self.max_ratings = max_ratings
         self.drop_missing_ratings = drop_missing_ratings
@@ -52,6 +78,16 @@ class CapstoneDataLoader:
         
         self.cleaning_info: Dict[str, int] = {}
         
+    def __str__(self):
+        return f"""
+        Capstone Data Loader
+            - data source {self.data_dir}
+            - seed_value {self.seed_value}
+            - min_ratings {self.min_ratings}
+            - max_rating {self.max_ratings}
+            - drop_missing_ratings {self.drop_missing_ratings}
+            - drop_inconsistent_gender {self.drop_inconsistent_gender}
+        """
     @property
     def num_cols(self) -> List[str]:
         NUM_COLS: List[str] = [
@@ -97,9 +133,9 @@ class CapstoneDataLoader:
         return QUAL_COLS
         
     # --- Main preparation method ---
-    def set_seed(self) -> None:
-        """Set the random seed for reproducibility."""
-        ss.set_seed(self.seed_value)
+    # def set_seed(self) -> None:
+    #     """Set the random seed for reproducibility."""
+    #     ss.set_seed(self.seed_value)
         
     def load_raw(
         self, 
@@ -304,7 +340,7 @@ class CapstoneDataLoader:
 
         Returns the final prepared dataframe.
         """
-        self.set_seed()
+        # self.set_seed()
         self.load_raw()
         self.merge()
         self.clean()

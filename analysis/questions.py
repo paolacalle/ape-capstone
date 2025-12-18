@@ -24,9 +24,22 @@ from utils.plot_utils import (
     plot_roc_curve,
 )
 
+from utils.data_loader import (
+    CapstoneDataLoader
+)
+
 import utils.modeling_helpers 
 
 DEFAULT_ALPHA = 0.005
+
+DATA_LOADER = CapstoneDataLoader(
+    data_dir="../data/",
+    seed_value=None, # go to #N-number default
+    min_ratings=0,
+    max_ratings= None,
+    drop_inconsistent_ratings=True,
+    drop_inconsistent_gender=True
+)
 
 def answer_q1_gender_bias_rating(
     df: pd.DataFrame,
@@ -38,7 +51,7 @@ def answer_q1_gender_bias_rating(
 
     This function should:
         - define a gender variable (e.g., 'male' vs 'female')
-        - compare average rating between groups
+        - compare average rating between groups : avg rating is a numerical value
         - create a plot (e.g., boxplot / violin)
         - return stats needed to write up the result
 
@@ -46,14 +59,15 @@ def answer_q1_gender_bias_rating(
     """
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    
+    
+    # comparative analysis between average rating and gender
+    # because the av
+    
+    
+    
 
-    # TODO: implement logic here 
-
-    results: Dict[str, Any] = {
-        "alpha": alpha,
-        # "comparison": comparison_result,
-        # "figure_paths": {...},
-    }
+    
     return results
 
 def answer_q2_gender_variance_rating(
