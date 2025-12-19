@@ -13,21 +13,38 @@ class Scores:
     Scores class for evaluating classification models.
     Implemented from scratch for self-learning reasons.
     """
+    # inside Scores class
+
+    CLASSIFICATION_SCORE_METHODS = {
+        "confusion_matrix",
+        "accuracy",
+        "sensitivity",
+        "specificity",
+        "precision",
+        "npv",
+        "auc",
+        "roc",
+        "auc_scratch",
+        "roc_scratch",
+    }
+
+    REGRESSION_SCORE_METHODS = {
+        "rmse",
+        "r2",
+        "mae",
+    }
+
+    SPECIAL_METHODS = {
+        "prevalence",
+    }
+
     @staticmethod
     def valid_scoring_methods():
-        return [
-            "confusion_matrix",
-            "prevalence",
-            "accuracy",
-            "sensitivity",
-            "specificity",
-            "precision",
-            "npv",
-            "auc",
-            "roc",
-            "auc_scratch",
-            "roc_scratch"
-        ]
+        return sorted(
+            Scores.CLASSIFICATION_SCORE_METHODS
+            | Scores.REGRESSION_SCORE_METHODS
+            | Scores.SPECIAL_METHODS
+        )
         
     @staticmethod
     def verify_scoring_methods(methods: List[str]):
@@ -42,6 +59,34 @@ class Scores:
                 f"Invalid scoring methods: {invalid}. "
                 f"Valid methods are: {sorted(valid)}"
             )
+            
+    @staticmethod
+    def rmse(y_true, y_pred):
+        y_true = np.asarray(y_true)
+        y_pred = np.asarray(y_pred)
+        if y_true.shape != y_pred.shape:
+            raise ValueError("y_true and y_pred must have the same shape")
+        return np.sqrt(np.mean((y_true - y_pred) ** 2))
+    
+    @staticmethod
+    def r2(y_true, y_pred):
+        y_true = np.asarray(y_true)
+        y_pred = np.asarray(y_pred)
+
+        ss_res = np.sum((y_true - y_pred) ** 2)
+        ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
+
+        # handle degenerate case: constant y_true
+        if ss_tot == 0:
+            return 0.0
+
+        return 1 - ss_res / ss_tot
+    
+    @staticmethod
+    def mae(y_true, y_pred):
+        y_true = np.asarray(y_true)
+        y_pred = np.asarray(y_pred)
+        return np.mean(np.abs(y_true - y_pred))
     
     @staticmethod
     def confusion_matrix(y_true, y_pred):
@@ -272,24 +317,41 @@ class Scores:
         y_pred_scores,
         methods: list[str],
     ) -> Dict[str, float]:
-        
         """
-        Evaluate multiple scoring methods.
+        Evaluate multiple scoring methods for regression or classification.
         """
         results = {}
+
         for method in methods:
-            print(f"Evaluating method: {method}")
-            if hasattr(Scores, method):
-                func = getattr(Scores, method)
-                if method in ["roc", "auc", "roc_scratch", "auc_scratch"]:
-                    results[method] = func(y_true, y_pred_scores)
-                elif method == "prevalence":
-                    results[method] = func(y_true)  # doesn't need y_pred
-                else:
-                    results[method] = func(y_true, y_pred)
-            else:
+            if not hasattr(Scores, method):
                 raise ValueError(
                     f"Method {method} not found in Scores class. "
                     f"Valid methods include: {Scores.valid_scoring_methods()}"
                 )
+
+            func = getattr(Scores, method)
+
+            # ---- classification metrics ----
+            if method in Scores.CLASSIFICATION_SCORE_METHODS:
+                if y_pred_scores is None:
+                    raise ValueError(
+                        f"Scoring method '{method}' requires prediction scores "
+                        "(classification only)."
+                    )
+                results[method] = func(y_true, y_pred_scores)
+
+            # ---- regression metrics ----
+            elif method in Scores.REGRESSION_SCORE_METHODS:
+                results[method] = func(y_true, y_pred)
+
+            # ---- special / label-only metrics ----
+            elif method in Scores.SPECIAL_METHODS:
+                results[method] = func(y_true)
+
+            else:
+                raise ValueError(
+                    f"Method '{method}' is not categorized as regression "
+                    "or classification."
+                )
+
         return results

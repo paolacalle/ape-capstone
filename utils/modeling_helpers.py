@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.base import ClassifierMixin, RegressorMixin
 from sklearn.metrics import (
     mean_squared_error,
     r2_score,
@@ -80,7 +81,9 @@ class ModelHelper:
         random_seed: int = None
     ):
         # if random_seed is None, get seed from .env
-        self.random_seed = SeedSetter.set_seed(random_seed)
+        if random_seed is None:
+            random_seed = SeedSetter.set_seed(random_seed)
+        self.random_seed = random_seed
         self.df = df
         
     # -- splitter --- 
@@ -95,7 +98,7 @@ class ModelHelper:
         self,
         n_splits: int = 5,
         shuffle: bool = True
-    ):
+    ) -> KFold:
         kf = KFold(n_splits=n_splits, shuffle=shuffle, random_state=self.random_seed)
         return kf
     
@@ -104,74 +107,62 @@ class ModelHelper:
         model, 
         X,
         y,
-        kfolds: KFold,
+        kfolds,
         scoring_methods: Optional[List[str]] = None
     ) -> Dict[str, List[float]]:
-        """
-        Perform K-fold cross-validation and compute custom scores per fold.
 
-        Parameters
-        ----------
-        model : sklearn-like estimator
-            Must implement fit(X, y), predict(X), and predict_proba(X) for classification.
-        X : array-like or DataFrame of shape (n_samples, n_features)
-        y : array-like of shape (n_samples,)
-        kfolds : KFold
-            A sklearn KFold (or similar) splitter.
-        scoring_methods : list of str, optional
-            Names of scoring methods as implemented in Scores. If None, no scores are computed.
-
-        Returns
-        -------
-        dict
-            {method_name: [score_fold_1, score_fold_2, ...]}
-        """
         if scoring_methods is None:
             scoring_methods = []
 
         Scores.verify_scoring_methods(scoring_methods)
 
-        # Ensure numpy array or proper indexer
-        # This allows compatibility with both pandas DataFrames and numpy arrays
-        if hasattr(X, "iloc"):
-            X_data = X
-            is_pandas_X = True
-        else:
-            X_data = np.asarray(X)
-            is_pandas_X = False
+        # Handle pandas vs numpy
+        is_pandas_X = hasattr(X, "iloc")
+        is_pandas_y = hasattr(y, "iloc")
 
-        if hasattr(y, "iloc"):
-            y_data = y
-            is_pandas_y = True
-        else:
-            y_data = np.asarray(y)
-            is_pandas_y = False
+        X_data = X
+        y_data = y
 
-        fold_results: Dict[str, List[float]] = defaultdict(list)
-        
-        for train_index, test_index in kfolds.split(X_data):
-            if is_pandas_X:
-                X_train, X_test = X_data.iloc[train_index], X_data.iloc[test_index]
-            else:
-                X_train, X_test = X_data[train_index], X_data[test_index]
+        is_classifier = isinstance(model, ClassifierMixin)
+        is_regressor = isinstance(model, RegressorMixin)
 
-            if is_pandas_y:
-                y_train, y_test = y_data.iloc[train_index], y_data.iloc[test_index]
-            else:
-                y_train, y_test = y_data[train_index], y_data[test_index]
+        if not (is_classifier or is_regressor):
+            raise ValueError("Model must be a classifier or regressor.")
+
+        fold_results = defaultdict(list)
+
+        for train_idx, test_idx in kfolds.split(X_data):
+
+            X_train = X_data.iloc[train_idx] if is_pandas_X else X_data[train_idx]
+            X_test  = X_data.iloc[test_idx]  if is_pandas_X else X_data[test_idx]
+
+            y_train = y_data.iloc[train_idx] if is_pandas_y else y_data[train_idx]
+            y_test  = y_data.iloc[test_idx]  if is_pandas_y else y_data[test_idx]
 
             model.fit(X_train, y_train)
 
             y_pred = model.predict(X_test)
 
-            # classification-only for now
-            assert hasattr(model, "predict_proba"), "Model does not have predict_proba method"
-            y_pred_scores = model.predict_proba(X_test)[:, 1]
+            # ---- classification vs regression ----
+            if is_classifier:
+                if hasattr(model, "predict_proba"):
+                    y_pred_scores = model.predict_proba(X_test)[:, 1]
+                elif hasattr(model, "decision_function"):
+                    y_pred_scores = model.decision_function(X_test)
+                else:
+                    y_pred_scores = None
+            else:
+                # regression
+                y_pred_scores = None
 
-            res = Scores.evaluate(y_test, y_pred, y_pred_scores, scoring_methods)
-            
+            res = Scores.evaluate(
+                y_true=y_test,
+                y_pred=y_pred,
+                y_pred_scores=y_pred_scores,
+                methods=scoring_methods
+            )
+
             for method, score in res.items():
                 fold_results[method].append(score)
-            
+
         return fold_results
-    
