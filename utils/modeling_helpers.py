@@ -4,12 +4,12 @@
 
 from dataclasses import dataclass
 from collections import defaultdict
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.base import ClassifierMixin, RegressorMixin
+from sklearn.base import ClassifierMixin, RegressorMixin, clone
 from sklearn.metrics import (
     mean_squared_error,
     r2_score,
@@ -109,14 +109,13 @@ class ModelHelper:
         y,
         kfolds,
         scoring_methods: Optional[List[str]] = None
-    ) -> Dict[str, List[float]]:
+    ) -> Dict[str, Any]:
 
         if scoring_methods is None:
             scoring_methods = []
 
         Scores.verify_scoring_methods(scoring_methods)
 
-        # Handle pandas vs numpy
         is_pandas_X = hasattr(X, "iloc")
         is_pandas_y = hasattr(y, "iloc")
 
@@ -130,8 +129,12 @@ class ModelHelper:
             raise ValueError("Model must be a classifier or regressor.")
 
         fold_results = defaultdict(list)
+        fitted_models = []
 
         for train_idx, test_idx in kfolds.split(X_data):
+
+            # fresh unfitted estimator each fold
+            f_model = clone(model)
 
             X_train = X_data.iloc[train_idx] if is_pandas_X else X_data[train_idx]
             X_test  = X_data.iloc[test_idx]  if is_pandas_X else X_data[test_idx]
@@ -139,20 +142,19 @@ class ModelHelper:
             y_train = y_data.iloc[train_idx] if is_pandas_y else y_data[train_idx]
             y_test  = y_data.iloc[test_idx]  if is_pandas_y else y_data[test_idx]
 
-            model.fit(X_train, y_train)
+            f_model.fit(X_train, y_train)
 
-            y_pred = model.predict(X_test)
+            y_pred = f_model.predict(X_test)
 
-            # ---- classification vs regression ----
+            # classification vs regression
             if is_classifier:
-                if hasattr(model, "predict_proba"):
-                    y_pred_scores = model.predict_proba(X_test)[:, 1]
-                elif hasattr(model, "decision_function"):
-                    y_pred_scores = model.decision_function(X_test)
+                if hasattr(f_model, "predict_proba"):
+                    y_pred_scores = f_model.predict_proba(X_test)[:, 1]
+                elif hasattr(f_model, "decision_function"):
+                    y_pred_scores = f_model.decision_function(X_test)
                 else:
                     y_pred_scores = None
             else:
-                # regression
                 y_pred_scores = None
 
             res = Scores.evaluate(
@@ -165,4 +167,10 @@ class ModelHelper:
             for method, score in res.items():
                 fold_results[method].append(score)
 
-        return fold_results
+            fitted_models.append(f_model)
+
+        # store the list (not the last model)
+        fold_results["fitted_models"] = fitted_models
+
+        return dict(fold_results)
+
