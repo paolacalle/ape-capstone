@@ -2,6 +2,7 @@
 from pathlib import Path
 from typing import Optional, Tuple, Dict, List, Union
 import pandas as pd
+import numpy as np
 from .seed_setter import SeedSetter
 from sklearn.preprocessing import StandardScaler
 
@@ -349,5 +350,24 @@ class CapstoneDataLoader:
         # add any other logic as needed 
         
         return self.prepared_df
+    
+    
+    def add_gender_code(self, clean_df, inplace = True) -> pd.DataFrame:
+        
+        if inplace is False:
+            clean_df = clean_df.copy()
+        
+        # Keep only consistent gender rows (male XOR female)
+        clean_df = clean_df.loc[
+            ((clean_df['male'] == 1) & (clean_df['female'] == 0)) |
+            ((clean_df['male'] == 0) & (clean_df['female'] == 1))
+        ].copy()
+
+        # 0 = male, 1 = female (just be explicit)
+        clean_df['gender_code'] = np.where(clean_df['male'] == 1, 0, 1) 
+        
+        return clean_df
+        
+        
     
     
