@@ -291,45 +291,41 @@ class CapstoneDataLoader:
         
         return self.prepared_df
     
+    def find_agg_tag_columns(self, prefix):
+        return [c for c in self.prepared_df.columns if c.startswith(prefix)]
+
     def add_tag_intensity_score(
         self,
-        demon: str = "num_ratings",
+        denom: str = "num_ratings",
         prefix: str = "tag_intensity_score"
     ) -> pd.DataFrame:
         """
         Compute tag intensity for each tag as:
             intensity = tag_value / num_ratings
-
-        Parameters
-        ----------
-        demon : str
-            Column name containing the denominator (e.g., number of ratings).
-        prefix : str
-            Prefix for intensity score columns.
-
-        Returns
-        -------
-        pd.DataFrame
-            Updated dataframe with tag intensity columns.
         """
-        
+
         df = self.prepared_df.copy()
-        
-        # avoid division-by-zero
-        denom = df[demon].replace(0, pd.NA)
-        
-        # vectorized division across all tag columns
-        # each tag value divided by the corresponding denom value for that row
-        intensity = df[self.tag_cols].div(denom, axis=0).fillna(0.0)
-        
+
+        # validate tag columns
+        missing = set(self.tag_cols) - set(df.columns)
+        if missing:
+            raise ValueError(f"Missing tag columns: {missing}")
+
+        # avoid division by zero
+        denominator = df[denom].replace(0, pd.NA)
+
+        # compute intensities
+        intensity = df[self.tag_cols].div(denominator, axis=0)
+
         # add prefix
         intensity = intensity.add_prefix(prefix + "_")
-        
+
         # attach to df
         df = df.join(intensity)
-        
+
         self.prepared_df = df
         return df
+
     
     def initial_setup(self) -> pd.DataFrame:
         """
@@ -348,6 +344,8 @@ class CapstoneDataLoader:
         self.clean()
         
         # add any other logic as needed 
+        
+        self.prepared_df = self.cleaned_df
         
         return self.prepared_df
     
