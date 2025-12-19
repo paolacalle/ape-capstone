@@ -352,22 +352,15 @@ class CapstoneDataLoader:
         return self.prepared_df
     
     
-    def add_gender_code(self, clean_df, inplace = True) -> pd.DataFrame:
-        
-        if inplace is False:
-            clean_df = clean_df.copy()
-        
-        # Keep only consistent gender rows (male XOR female)
+    def add_gender_code(self, clean_df) -> pd.DataFrame:
         clean_df = clean_df.loc[
             ((clean_df['male'] == 1) & (clean_df['female'] == 0)) |
             ((clean_df['male'] == 0) & (clean_df['female'] == 1))
         ].copy()
 
-        # 0 = male, 1 = female (just be explicit)
-        clean_df['gender_code'] = np.where(clean_df['male'] == 1, 0, 1) 
-        
+        clean_df['gender_code'] = (clean_df['female'] == 1).astype(int)
         return clean_df
-        
+
         
     
     
