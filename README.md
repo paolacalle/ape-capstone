@@ -1,6 +1,25 @@
 # APE Capstone Project
 Assessing Professor Effectiveness (NYU DS-GA 1001)
 
+## FOR GRADERS
+Each notebook in `/analysis` corresponds to a question.
+For example, 
+- q1.ipynb is all code for question 1. 
+- q2.ipynb is all code for question 2. 
+- ...
+- q10.ipynb is all code for question 10.
+- qeq.ipynb is all code for extra credit. 
+
+All you have to do to get this running, is 
+
+```bash 
+cd /path/to/project
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+Then run each *.ipynb 
+
 # Overview
 This project analyzes a scraped RateMyProfessor dataset as part of the DS-GA 1001 Capstone.
 We answer 10 required questions (plus optional extra credit) involving:
@@ -100,40 +119,3 @@ loader.prepared_df   # final dataset for modeling
 
 This makes debugging, EDA, and transparency easy.
 
-### Notebook Environment Setup (`set_notebook_env.py`)
-Jupyter notebooks run from inside `/analysis/`, so Python can't automatically see project-level modules.
-
-We fix that in one place:
-```python
-# analysis/set_notebook_env.py
-
-import os, sys
-project_root = os.path.abspath("..")
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
-```
-
-In your notebook:
-
-```python
-import set_notebook_env
-loader = set_notebook_env.set_env(data_dir="../data/", min_ratings=0, max_ratings=15)
-```
-
-This:
-- Adds the project root to sys.path
-- Ensures imports like from utils import CapstoneDataLoader work
-- Seeds the notebook environment
-
-### Running the Full Pipeline in `analysis.py`
-
-```python 
-python analysis/analysis.py
-```
-
-This will:
-- Load all data
-- Clean / normalize
-- Produce plots
-- Begin answering the capstone questions
