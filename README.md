@@ -13,6 +13,7 @@ Each notebook in the `/analysis` directory corresponds to a specific question in
 To reproduce the results, first create and activate a virtual environment, then install the required dependencies:
 
 ```bash
+git clone https://github.com/paolacalle/ape-capstone.git
 cd /path/to/project
 python -m venv .venv
 source .venv/bin/activate
