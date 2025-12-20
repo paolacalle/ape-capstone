@@ -2,23 +2,22 @@
 Assessing Professor Effectiveness (NYU DS-GA 1001)
 
 ## FOR GRADERS
-Each notebook in `/analysis` corresponds to a question.
-For example, 
-- q1.ipynb is all code for question 1. 
-- q2.ipynb is all code for question 2. 
-- ...
-- q10.ipynb is all code for question 10.
-- qeq.ipynb is all code for extra credit. 
+Each notebook in the `/analysis` directory corresponds to a specific question in the assignment.
 
-All you have to do to get this running, is 
+- `q1.ipynb` — code for Question 1  
+- `q2.ipynb` — code for Question 2  
+- …  
+- `q10.ipynb` — code for Question 10  
+- `qec.ipynb` — code for the extra credit analysis  
 
-```bash 
+To reproduce the results, first create and activate a virtual environment, then install the required dependencies:
+
+```bash
 cd /path/to/project
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
-Then run each *.ipynb 
 
 # Overview
 This project analyzes a scraped RateMyProfessor dataset as part of the DS-GA 1001 Capstone.
